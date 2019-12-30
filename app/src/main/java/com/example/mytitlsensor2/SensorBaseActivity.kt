@@ -9,19 +9,16 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import io.reactivex.Observable
-import io.reactivex.ObservableEmitter
 import io.reactivex.ObservableOnSubscribe
 import io.reactivex.Observer
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import androidx.core.app.ComponentActivity.ExtraData
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
 import io.reactivex.schedulers.Schedulers
-import java.util.concurrent.Semaphore
 
 
 @SuppressLint("Registered")
 open class SensorBaseActivity : AppCompatActivity() {
+
 
     private var mSensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
@@ -41,127 +38,63 @@ open class SensorBaseActivity : AppCompatActivity() {
     private var roll: Float = 0.toFloat()
     var prePitch = 0.0f
     var defValue = 0
-
+    lateinit var mPitchVal: MyInterface
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Log.d("###","OnCreate BASE")
-
-        val observer = object : Observer<SensorEvent> {
-            override fun onNext(t: SensorEvent) {
-                println("onNext: $t")
-            }
-
-            override fun onSubscribe(d: Disposable) {
-                println("onSubscribe")
-            }
-
-
-            override fun onError(e: Throwable) {
-                println("onError: " + e.message)
-            }
-
-            override fun onComplete() {
-                println("onComplete")
-            }
-        }
-
-        observable.subscribeOn(Schedulers.io()).subscribe(observer)
     }
 
     override fun onResume() {
         super.onResume()
-        //initSensorManager()
-        Log.d("###","OnResume BASE")
+        observable
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.computation())
+            .subscribe()
     }
 
     override fun onStop() {
-        //unRegisterListener()
-        Log.d("###","OnStop BASE")
+        unRegisterListener()
         super.onStop()
     }
 
-
-    var observable = Observable.create(object: ObservableOnSubscribe<SensorEvent> {
-        override fun subscribe(emitter: ObservableEmitter<SensorEvent>) {
-
-            mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-            accelerometer = mSensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-            magnetometer  = mSensorManager!!.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-
-            val sensorEventListener = object : SensorEventListener {
-                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-                override fun onSensorChanged(event: SensorEvent) {
-                    //If type is accelerometer only assign values to global property mGravity
-
-                    /*
-                    val sensorType = event.sensor.getType()
-
-                    when (sensorType) {
-                        Sensor.TYPE_ACCELEROMETER -> {
-                            accels = event.values.clone();
-                        }
-                        Sensor.TYPE_MAGNETIC_FIELD -> {
-                            mags = event.values.clone();
-                        }
-                    }
-
-                    if (mags != null && accels != null) {
-                        gravity = FloatArray(9)
-                        magnetic = FloatArray(9)
-                        SensorManager.getRotationMatrix(gravity, magnetic, accels, mags)
-                        val outGravity = FloatArray(9)
-                        SensorManager.remapCoordinateSystem( gravity, SensorManager.AXIS_X, SensorManager.AXIS_Z, outGravity )
-                        SensorManager.getOrientation(outGravity, values)
-
-                        //azimuth = values[0] * 57.2957795f
-                        pitch = values[1]// * 57.29f
-                        //roll = values[2] * 57.2957795f
-                        mags      =  null
-                        accels    =  null
-                    }*/
-/*
-            EventBus.getDefault().post(MPojo(pitch))*/
-
-                    Log.d("### pitch", "sENSOR EVENT")
-                    Log.d("### Current Thread:", Thread.currentThread().name)
-                    //defValue++
-                    /*if(Math.abs(prePitch - pitch) > 0.7 *//*&& defValue > 4*//* ){
-
-                prePitch = pitch
-                //defValue = 0
-            }*/
-
-
-                }
-            }
-
-            mSensorManager?.registerListener( sensorEventListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL )
-            mSensorManager?.registerListener( sensorEventListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL )
-
+/*    val observer by lazy {
+        object : Observer<SensorEvent> {
+        override fun onNext(t: SensorEvent) {
+            println("onNext: $t")
+            Log.d("### observer Thread:", Thread.currentThread().name)
         }
+
+        override fun onSubscribe(d: Disposable) {
+            println("onSubscribe")
+        }
+
+        override fun onError(e: Throwable) {
+            println("onError: " + e.message)
+        }
+
+        override fun onComplete() {
+            Log.d("###","onComplete")
+        }
+    }
+    }*/
+
+    var observable = Observable.create(ObservableOnSubscribe<SensorEvent> {
+
+        initSensorManager()
     })
 
-
-
-
     fun initSensorManager() {
+
+        val str = Thread.currentThread().name
+
+        Log.d("### Current Thread:", str)
+
         mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = mSensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer  = mSensorManager!!.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
-        /*GlobalScope.launch {
-            withContext(Dispatchers.IO) {
-                initListeners()
-            }
-        }*/
-
-        initListeners()
-        //initListeners()
-    }
-
-    fun initListeners() {
+        // initialize listener
         mSensorManager?.registerListener( sensorEventListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL )
         mSensorManager?.registerListener( sensorEventListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL )
     }
@@ -169,16 +102,10 @@ open class SensorBaseActivity : AppCompatActivity() {
     var sensorEventListener = object : SensorEventListener {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
         override fun onSensorChanged(event: SensorEvent) {
-            //If type is accelerometer only assign values to global property mGravity
-            val sensorType = event.sensor.getType()
 
-            when (sensorType) {
-                Sensor.TYPE_ACCELEROMETER -> {
-                    accels = event.values.clone();
-                }
-                Sensor.TYPE_MAGNETIC_FIELD -> {
-                    mags = event.values.clone();
-                }
+            when (event.sensor.getType()) {
+                Sensor.TYPE_ACCELEROMETER  -> { accels = event.values.clone() }
+                Sensor.TYPE_MAGNETIC_FIELD -> { mags   = event.values.clone() }
             }
 
             if (mags != null && accels != null) {
@@ -188,23 +115,17 @@ open class SensorBaseActivity : AppCompatActivity() {
                 val outGravity = FloatArray(9)
                 SensorManager.remapCoordinateSystem( gravity, SensorManager.AXIS_X, SensorManager.AXIS_Z, outGravity )
                 SensorManager.getOrientation(outGravity, values)
-
-                //azimuth = values[0] * 57.2957795f
-                pitch = values[1]// * 57.29f
+                pitch = values[1] * 57.29f
                 //roll = values[2] * 57.2957795f
                 mags      =  null
                 accels    =  null
             }
-/*
-            EventBus.getDefault().post(MPojo(pitch))*/
-
             Log.d("### pitch", ""+pitch)
-            //defValue++
-            /*if(Math.abs(prePitch - pitch) > 0.7 *//*&& defValue > 4*//* ){
 
-                prePitch = pitch
-                //defValue = 0
-            }*/
+            val str = Thread.currentThread().name
+
+            Log.d("### Current Thread:", str)
+            mPitchVal.mPichVal(pitch)
         }
     }
 

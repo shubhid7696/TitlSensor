@@ -16,6 +16,11 @@ class MainActivity : SensorBaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        mPitchVal = object : MyInterface {
+            override fun mPichVal(mP: Float) {
+                Log.d("### ", "mY pITCH vAL = $mP")
+            }
+        }
     }
 
     override fun onResume() {
