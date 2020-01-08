@@ -40,11 +40,6 @@ open class SensorBaseActivity : AppCompatActivity() {
     var defValue = 0
     lateinit var mPitchVal: MyInterface
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
-
     override fun onResume() {
         super.onResume()
         observable
@@ -58,45 +53,23 @@ open class SensorBaseActivity : AppCompatActivity() {
         super.onStop()
     }
 
-/*    val observer by lazy {
-        object : Observer<SensorEvent> {
-        override fun onNext(t: SensorEvent) {
-            println("onNext: $t")
-            Log.d("### observer Thread:", Thread.currentThread().name)
-        }
-
-        override fun onSubscribe(d: Disposable) {
-            println("onSubscribe")
-        }
-
-        override fun onError(e: Throwable) {
-            println("onError: " + e.message)
-        }
-
-        override fun onComplete() {
-            Log.d("###","onComplete")
-        }
-    }
-    }*/
-
     var observable = Observable.create(ObservableOnSubscribe<SensorEvent> {
-
         initSensorManager()
     })
 
     fun initSensorManager() {
-
-        val str = Thread.currentThread().name
-
-        Log.d("### Current Thread:", str)
 
         mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = mSensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer  = mSensorManager!!.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
         // initialize listener
-        mSensorManager?.registerListener( sensorEventListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL )
-        mSensorManager?.registerListener( sensorEventListener, magnetometer, SensorManager.SENSOR_DELAY_NORMAL )
+        mSensorManager?.registerListener( sensorEventListener, accelerometer, 200000 )
+        mSensorManager?.registerListener( sensorEventListener,  magnetometer, 200000 )
+
+        if(!(mSensorManager?.registerListener( sensorEventListener, accelerometer, 200000 )!!)){
+            Log.d("## mags","does not exist")
+        }
     }
 
     var sensorEventListener = object : SensorEventListener {
@@ -107,7 +80,12 @@ open class SensorBaseActivity : AppCompatActivity() {
                 Sensor.TYPE_ACCELEROMETER  -> { accels = event.values.clone() }
                 Sensor.TYPE_MAGNETIC_FIELD -> { mags   = event.values.clone() }
             }
-
+            if(mags == null){
+                Log.d("### mags","not exist")
+            }
+            if (accels == null){
+                Log.d("### accels","not exist")
+            }
             if (mags != null && accels != null) {
                 gravity = FloatArray(9)
                 magnetic = FloatArray(9)
@@ -117,15 +95,13 @@ open class SensorBaseActivity : AppCompatActivity() {
                 SensorManager.getOrientation(outGravity, values)
                 pitch = values[1] * 57.29f
                 //roll = values[2] * 57.2957795f
+
+                Log.d("### ", "mY EVent vAL = $pitch")
                 mags      =  null
                 accels    =  null
             }
-            Log.d("### pitch", ""+pitch)
 
-            val str = Thread.currentThread().name
-
-            Log.d("### Current Thread:", str)
-            mPitchVal.mPichVal(pitch)
+            mPitchVal.mPichVal(getBiasVal(pitch))
         }
     }
 
@@ -133,5 +109,20 @@ open class SensorBaseActivity : AppCompatActivity() {
         if (mSensorManager != null) {
             mSensorManager?.unregisterListener(sensorEventListener)
         }
+    }
+
+    private fun getBiasVal(pitch: Float): Float {
+        /*if(pitch < 10.0){
+            Log.d("### pitch val / 10", "" + pitch/10)
+            return pitch/10
+        }else *//*if(pitch >= 89.990){
+            Log.d("### pitch val / 10", "" + pitch/1000)
+            return 1.0f
+        }else {
+            Log.d("### pitch val / 10", "" + pitch/100)
+            return pitch/100
+        }*/
+        Log.d("### pitch val / 100", "" + pitch/10)
+        return pitch/100
     }
 }
