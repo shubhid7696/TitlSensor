@@ -39,9 +39,10 @@ class MainActivity : SensorBaseActivity() {
         if(pitch<0){
             ptch = 0.0f
         }
-        Log.d("### pitch val", "" + ptch)
+        Log.e("### pitch val", "" + ptch)
         //(mainActivity as ViewGroup).layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
         val params = dummy_vv.layoutParams as ConstraintLayout.LayoutParams
+        Log.e("### pitch val", "rounded" + "%.3f".format(ptch).toFloat())
         params.verticalBias = "%.3f".format(ptch).toFloat()//0.2f // here is one modification for example. modify anything else you want :)
         dummy_vv.layoutParams = params
 
@@ -55,7 +56,7 @@ class MainActivity : SensorBaseActivity() {
         replaceAnimation.fillAfter = true
 
         //val transAnim = TranslateAnimation(arrowIv.x, arrowIv.x, arrowIv.y, dummy_vv.y-arrowIv.y-arrowIv.height)
-        val transAnim = TranslateAnimation(0f, 0f, arrowIv.y, dummy_vv.y-arrowIv.y-arrowIv.height)
+        val transAnim = TranslateAnimation(0f, 0f, arrowIv.y, (dummy_vv.y-arrowIv.y)-arrowIv.height)
         //val transAnim = TranslateAnimation(0f, 0f, arrowIv.y, dummy_vv.y-arrowIv.y-arrowIv.height)"
         transAnim.duration = 1000
 
